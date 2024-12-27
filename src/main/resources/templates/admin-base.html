@@ -1,10 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title th:text="${title}">Dashboard</title>
+  <!-- CSS Dependencies -->
+  <link rel="stylesheet" th:href="@{/plugins/fontawesome-free/css/all.min.css}">
+  <link rel="stylesheet" th:href="@{/css/adminlte.min.css}">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
 </head>
-<body>
-$END$
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+  <!-- Navbar -->
+  <nav th:replace="~{fragments/navbar :: navbar}"></nav>
+  <!-- Sidebar -->
+  <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+  <!-- Content Wrapper -->
+  <div class="content-wrapper">
+    <div class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1 class="m-0" th:text="${title}">Default Title</h1>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="container-fluid">
+        <!-- Aquí puedes añadir contenido adicional más adelante -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Tabla Vacía</h3>
+          </div>
+          <div class="card-body">
+            <table class="table table-bordered">
+              <thead>
+              <tr>
+                <th>#</th>
+                <th>Columna 1</th>
+                <th>Columna 2</th>
+              </tr>
+              </thead>
+              <tbody>
+              <!-- Fila vacía -->
+              <tr>
+                <td colspan="3" class="text-center">No hay datos disponibles</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Control Sidebar -->
+  <div th:replace="~{fragments/controlsidebar :: controlsidebar}"></div>
+
+
+  <!-- Footer -->
+  <footer class="main-footer">
+    <div th:replace="~{fragments/footer :: footer}"></div>
+  </footer>
+</div>
+
+<!-- JS Dependencies -->
+<script th:src="@{/plugins/jquery/jquery.min.js}"></script>
+<script th:src="@{/plugins/bootstrap/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/js/adminlte.min.js}"></script>
 </body>
 </html>

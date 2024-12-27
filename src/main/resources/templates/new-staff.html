@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title}">Asignar/Quitar Usuarios del Negocio</title>
+    <!-- CSS Dependencies -->
+    <link rel="stylesheet" th:href="@{/plugins/fontawesome-free/css/all.min.css}">
+    <link rel="stylesheet" th:href="@{/css/adminlte.min.css}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+</head>
+<body class="hold-transition sidebar-mini">
+<div id="alertContainer" style="position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1050;"></div>
+<div class="wrapper">
+    <!-- Navbar -->
+    <nav th:replace="~{fragments/navbar :: navbar}"></nav>
+    <!-- Sidebar -->
+    <aside th:replace="~{fragments/sidebar :: sidebar}"></aside>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0" th:text="'Asignar/Quitar Usuarios del Negocio'">Asignar/Quitar Usuarios del Negocio</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="content">
+            <div class="container-fluid">
+                <!-- Formulario para asignar usuarios -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Asignar/Quitar Usuarios del Negocio</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="staffForm" th:action="@{/admin-dashboard/business/{businessId}/assign-users(businessId=${business.id})}" method="post">
+                            <input type="hidden" id="businessId" name="businessId" th:value="${business.id}">
+                            <div class="form-row">
+                                <!-- Cuadro con todos los usuarios disponibles -->
+                                <div class="col-md-5">
+                                    <label for="usuariosDisponibles">Usuarios Disponibles:</label>
+                                    <select multiple="multiple" id="usuariosDisponibles" name="usuariosDisponibles" class="form-control" size="10">
+                                        <option th:each="user : ${availableUsers}" th:value="${user.id}" th:text="${user.nombre}"></option>
+                                    </select>
+                                </div>
+
+                                <!-- Botones para mover usuarios -->
+                                <div class="col-md-2 d-flex justify-content-center align-items-center" style="flex-direction: column; gap: 10px;">
+                                    <button type="button" class="btn btn-primary btn-sm" id="moveRight"><i class="fa fa-arrow-right"></i></button>
+                                    <button type="button" class="btn btn-primary btn-sm" id="moveLeft"><i class="fa fa-arrow-left"></i></button>
+                                </div>
+
+                                <!-- Cuadro con usuarios asignados al negocio -->
+                                <div class="col-md-5">
+                                    <label for="usuariosAsignados">Usuarios Asignados:</label>
+                                    <select multiple="multiple" id="usuariosAsignados" name="usuariosAsignados" class="form-control" size="10">
+                                        <option th:each="user : ${assignedUsers}" th:value="${user.id}" th:text="${user.nombre}"></option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Botón para guardar los cambios -->
+                            <div class="form-group mt-3">
+                                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Control Sidebar -->
+    <div th:replace="~{fragments/controlsidebar :: controlsidebar}"></div>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <div th:replace="~{fragments/footer :: footer}"></div>
+    </footer>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+    const availableUsers = document.getElementById('usuariosDisponibles');
+    const assignedUsers = document.getElementById('usuariosAsignados');
+    const form = document.getElementById('staffForm');
+    const alertContainer = document.getElementById('alertContainer');
+
+    let availableUsersList = [];
+    let assignedUsersList = [];
+    let movedToAssigned = []; // Usuarios recientemente movidos a "asignados"
+    let movedToAvailable = []; // Usuarios recientemente movidos a "disponibles"
+
+    // Inicialización de las listas desde el DOM
+    function initializeLists() {
+        availableUsersList = Array.from(availableUsers.options).map(option => ({
+            id: option.value,
+            nombre: option.textContent,
+        }));
+
+        assignedUsersList = Array.from(assignedUsers.options).map(option => ({
+            id: option.value,
+            nombre: option.textContent,
+        }));
+    }
+
+    initializeLists();
+
+    // Renderizar listas en el DOM
+    function renderUserList(userList, selectElement) {
+        selectElement.innerHTML = '';
+        userList.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.id;
+            option.textContent = user.nombre;
+            selectElement.appendChild(option);
+        });
+    }
+
+    // Mover usuarios entre listas
+    function moveUser(sourceList, targetList, selectElementSource, selectElementTarget, movedList) {
+        const selectedOptions = Array.from(selectElementSource.selectedOptions);
+        selectedOptions.forEach(option => {
+            const userId = option.value;
+            const userIndex = sourceList.findIndex(user => user.id === userId);
+            if (userIndex !== -1) {
+                const user = sourceList.splice(userIndex, 1)[0];
+                targetList.push(user);
+                movedList.push(user); // Registrar el movimiento
+            }
+        });
+        renderUserList(sourceList, selectElementSource);
+        renderUserList(targetList, selectElementTarget);
+    }
+
+    document.getElementById('moveRight').addEventListener('click', function () {
+        moveUser(availableUsersList, assignedUsersList, availableUsers, assignedUsers, movedToAssigned);
+    });
+
+    document.getElementById('moveLeft').addEventListener('click', function () {
+        moveUser(assignedUsersList, availableUsersList, assignedUsers, availableUsers, movedToAvailable);
+    });
+
+    // Enviar datos al backend con AJAX
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const businessId = document.getElementById('businessId').value;
+
+        try {
+            const response = await fetch(`/admin-dashboard/business/${businessId}/update-users`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    usuariosAsignados: movedToAssigned.map(user => user.id),
+                    usuariosEliminados: movedToAvailable.map(user => user.id),
+                }),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                showAlert('Usuarios actualizados exitosamente.', 'success');
+                // Limpiar los movimientos después de guardar
+                movedToAssigned = [];
+                movedToAvailable = [];
+            } else {
+                showAlert(`Error: ${result.error || 'No se pudo actualizar los usuarios.'}`, 'danger');
+            }
+        } catch (error) {
+            showAlert(`Error del servidor: ${error.message}`, 'danger');
+        }
+    });
+
+    // Mostrar mensajes en la página
+    function showAlert(message, type) {
+    alertContainer.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    `;
+}
+});
+
+</script>
+
+<script th:src="@{/plugins/jquery/jquery.min.js}"></script>
+<script th:src="@{/plugins/bootstrap/js/bootstrap.bundle.min.js}"></script>
+<script th:src="@{/js/adminlte.min.js}"></script>
+</body>
+</html>
+

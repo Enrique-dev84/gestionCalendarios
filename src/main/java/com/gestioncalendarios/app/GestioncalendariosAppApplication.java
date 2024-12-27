@@ -4,7 +4,10 @@ import com.gestioncalendarios.app.persistence.entity.PermissionEntity;
 import com.gestioncalendarios.app.persistence.entity.RolEntity;
 import com.gestioncalendarios.app.persistence.entity.RolEnum;
 import com.gestioncalendarios.app.persistence.entity.UserEntity;
+import com.gestioncalendarios.app.persistence.repository.PermissionRepository;
+import com.gestioncalendarios.app.persistence.repository.RolRepository;
 import com.gestioncalendarios.app.persistence.repository.UserRepository;
+import com.gestioncalendarios.app.service.RolService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -12,6 +15,7 @@ import org.springframework.context.annotation.Bean;
 
 import java.util.List;
 import java.util.Set;
+
 
 @SpringBootApplication
 public class GestioncalendariosAppApplication {
@@ -21,92 +25,47 @@ public class GestioncalendariosAppApplication {
 	}
 
 	@Bean
-	CommandLineRunner init(UserRepository userRepository){
+	CommandLineRunner init(RolService rolService, RolRepository rolRepository, UserRepository userRepository) {
 		return args -> {
 
-			// Crear Permission
-			PermissionEntity createPermission = PermissionEntity.builder()
-					.name("CREATE")
-					.build();
+			rolService.createRoles();
 
-			PermissionEntity readPermission = PermissionEntity.builder()
-					.name("READ")
-					.build();
 
-			PermissionEntity updatePermission = PermissionEntity.builder()
-					.name("UPDATE")
-					.build();
+			// Verificar si ya existe el usuario 'admin'
+			if (userRepository.findUserEntityByUsername("admin").isEmpty()) {
 
-			PermissionEntity deletePermission = PermissionEntity.builder()
-					.name("DELETE")
-					.build();
+				// Crear Permission
+				PermissionEntity allPermission = PermissionEntity.builder()
+						.name("ALL")
+						.build();
 
-			// Crear Rol
-			RolEntity jefeRol = RolEntity.builder()
-					.rolEnum(RolEnum.JEFE)
-					.permissionList(Set.of(createPermission, readPermission, updatePermission, deletePermission))
-					.build();
+				// Crear Rol
+				RolEntity jefeRol = RolEntity.builder()
+						.rolEnum(RolEnum.JEFE)
+						.permissionList(Set.of(allPermission))
+						.build();
 
-			RolEntity encargadoNegocioRol = RolEntity.builder()
-					.rolEnum(RolEnum.ENCARGADO_NEGOCIO)
-					.permissionList(Set.of(createPermission, readPermission, updatePermission, deletePermission))
-					.build();
+				// Crear Usuarios
+				UserEntity userAdmin = UserEntity.builder()
+						.username("admin")
+						.password("$2b$12$DS5HlmRVW9QOC260APwxpuMAPpsqNGHZznN8J5LosTmFY/UPTqn5O")
+						.isEnabled(true)
+						.accountNoExpired(true)
+						.accountNoLocked(true)
+						.credentialNoExpired(true)
+						.rolList(Set.of(jefeRol))
+						.build();
 
-			RolEntity encargadoTurnoRol = RolEntity.builder()
-					.rolEnum(RolEnum.ENCARGADO_TURNO)
-					.permissionList(Set.of(createPermission, readPermission, updatePermission, deletePermission))
-					.build();
+				userRepository.saveAll(List.of(userAdmin));
 
-			RolEntity trabajadorRol = RolEntity.builder()
-					.rolEnum(RolEnum.TRABAJADOR)
-					.permissionList(Set.of(readPermission))
-					.build();
-
-			// Crear Usuarios
-			UserEntity userEnrique = UserEntity.builder()
-					.username("Enrique")
-					.password("1234")
-					.isEnabled(true)
-					.accountNoExpired(true)
-					.accountNoLocked(true)
-					.credentialNoExpired(true)
-					.rolList(Set.of(jefeRol))
-					.build();
-
-			UserEntity userJose = UserEntity.builder()
-					.username("Jose")
-					.password("1234")
-					.isEnabled(true)
-					.accountNoExpired(true)
-					.accountNoLocked(true)
-					.credentialNoExpired(true)
-					.rolList(Set.of(encargadoNegocioRol))
-					.build();
-
-			UserEntity userMaria = UserEntity.builder()
-					.username("María")
-					.password("1234")
-					.isEnabled(true)
-					.accountNoExpired(true)
-					.accountNoLocked(true)
-					.credentialNoExpired(true)
-					.rolList(Set.of(encargadoTurnoRol))
-					.build();
-
-			UserEntity userFelipe = UserEntity.builder()
-					.username("Felipe")
-					.password("1234")
-					.isEnabled(true)
-					.accountNoExpired(true)
-					.accountNoLocked(true)
-					.credentialNoExpired(true)
-					.rolList(Set.of(trabajadorRol))
-					.build();
-
-			userRepository.saveAll(List.of(userEnrique, userJose, userMaria, userFelipe));
-
+			} else {
+				System.out.println("El usuario 'admin' ya existe.");
+			}
 		};
 	}
 
 
 }
+
+
+

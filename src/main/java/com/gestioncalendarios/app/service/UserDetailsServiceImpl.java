@@ -2,16 +2,17 @@ package com.gestioncalendarios.app.service;
 
 import com.gestioncalendarios.app.persistence.entity.UserEntity;
 import com.gestioncalendarios.app.persistence.repository.UserRepository;
+import com.gestioncalendarios.app.config.CustomUserDetails; // Asegúrate de importar la clase CustomUserDetails
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
@@ -22,25 +23,35 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 
+        // Buscar al usuario en la base de datos
         UserEntity userEntity = userRepository.findUserEntityByUsername(username)
-                .orElseThrow(()->new UsernameNotFoundException("El usuario " + username +" no existe"));
+                .orElseThrow(() -> new UsernameNotFoundException("El usuario " + username + " no existe"));
 
-        List<SimpleGrantedAuthority> authorityList = new ArrayList<>();
+        // Concatenar roles y permisos en una sola lista de autoridades
+        List<SimpleGrantedAuthority> authorities = userEntity.getRolList().stream()
+                .flatMap(rol -> {
+                    // Convertir los roles a autoridades
+                    List<SimpleGrantedAuthority> roleAuthorities = List.of(new SimpleGrantedAuthority("ROLE_" + rol.getRolEnum().name()));
 
-        userEntity.getRolList()
-                .forEach(rol -> authorityList.add(new SimpleGrantedAuthority("ROLE_".concat(rol.getRolEnum().name()))));
+                    // Convertir los permisos a autoridades
+                    List<SimpleGrantedAuthority> permissionAuthorities = rol.getPermissionList().stream()
+                            .map(permission -> new SimpleGrantedAuthority(permission.getName()))
+                            .toList();
 
-        userEntity.getRolList().stream()
-                .flatMap(rol->rol.getPermissionList().stream())
-                .forEach(permission->authorityList.add(new SimpleGrantedAuthority(permission.getName())));
+                    // Combinar ambos listados en un solo flujo
+                    return Stream.concat(roleAuthorities.stream(), permissionAuthorities.stream());
+                })
+                .collect(Collectors.toList());
 
-        return new User(userEntity.getUsername(),
+        // Devolver un CustomUserDetails que incluye el nombre
+        return new CustomUserDetails(userEntity.getUsername(),
                 userEntity.getPassword(),
                 userEntity.isEnabled(),
                 userEntity.isAccountNoExpired(),
                 userEntity.isCredentialNoExpired(),
                 userEntity.isAccountNoLocked(),
-                authorityList);
-
+                authorities,
+                userEntity.getNombre()); // Pasar el nombre aquí
     }
 }
+
